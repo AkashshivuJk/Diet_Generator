@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diet Generator Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #chatContainer {
+            width: 50%;
+            padding: 20px;
+            background-color: #070707;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #outputContainer {
+            width: 50%;
+            padding: 20px;
+            background-color: rgb(2, 247, 210);
+            border-left: 1px solid #ddd;
+            overflow-y: auto;
+        }
+
+        #chatWindow {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .bot {
+            color: #010b05;
+            background-color: rgb(2, 247, 210);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            width: fit-content;
+        }
+
+        .user {
+            color: #010b05;
+            background-color: #f6ec25;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            margin-left: auto;
+            width: fit-content;
+        }
+
+        #userInput {
+            width: calc(100% - 90px);
+            padding: 10px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: rgb(2, 247, 210);
+            color: #010b05;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        h1 {
+            color: rgb(2, 247, 210);
+        }
+
+        .formatted-message {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chatContainer">
+        <h1>KhaanaSutra : Your personalized Diet generator  🥗</h1>
+        <div id="chatWindow"></div>
+        <div id="inputContainer">
+            <input id="userInput" type="text" placeholder="Type your answer..." disabled>
+            <button id="sendBtn" onclick="handleUserInput()" disabled>Send</button>
+        </div>
+    </div>
+
+    <div id="outputContainer">
+        <h2>Your Diet Plan</h2>
+        <div id="outputWindow"></div>
+    </div>
+
+    <script>
+        const questions = [
+            "Hi! Welcome to the diet generator. What's your height in cm?",
+            "Great! What's your weight in kg?",
+            "Got it! How old are you?",
+            "Thanks! What's your gender?",
+            "What's your diet preference?",
+            "Lastly, what's your goal?"
+        ];
+
+        const options = {
+            3: ["Male", "Female"],
+            4: ["Both", "Vegetarian", "Vegan","Non-vegetarian"],
+            5: ["Maintain Weight", "Gain Weight", "Lose Weight"]
+        };
+
+        const userResponses = {};
+        const keys = ["height", "weight", "age", "gender", "preferences", "goal"];
+        let currentQuestionIndex = 0;
+
+        const chatWindow = document.getElementById("chatWindow");
+        const userInput = document.getElementById("userInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const inputContainer = document.getElementById("inputContainer");
+        const outputWindow = document.getElementById("outputWindow");
+
+        function formatMarkdown(text) {
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/^# (.*)/gm, '<h1>$1</h1>');
+            text = text.replace(/^## (.*)/gm, '<h2>$1</h2>');
+            text = text.replace(/^\* (.*)/gm, '<li>$1</li>');
+            text = text.replace(/(<li>.*<\/li>\n?)+/g, function (match) {
+                return '<ul>' + match + '</ul>';
+            });
+            text = text.replace(/\n/g, '<br>');
+            return text;
+        }
+
+        function addMessage(content, sender) {
+            const message = document.createElement("div");
+            message.className = sender;
+            message.textContent = content;
+            chatWindow.appendChild(message);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function addFormattedOutput(content) {
+            const formatted = formatMarkdown(content);
+            const outputMessage = document.createElement("div");
+            outputMessage.className = "formatted-message";
+            outputMessage.innerHTML = formatted;
+            outputWindow.appendChild(outputMessage);
+        }
+
+        function addOptions(optionsArray) {
+            const optionsContainer = document.createElement("div");
+            optionsContainer.className = "options";
+
+            optionsArray.forEach(option => {
+                const button = document.createElement("button");
+                button.textContent = option;
+                button.onclick = () => handleOptionClick(option);
+                optionsContainer.appendChild(button);
+            });
+
+            chatWindow.appendChild(optionsContainer);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function handleOptionClick(option) {
+            addMessage(option, "user");
+            userResponses[keys[currentQuestionIndex]] = option;
+            currentQuestionIndex++;
+            askNextQuestion();
+        }
+
+        function askNextQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                addMessage(questions[currentQuestionIndex], "bot");
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+                inputContainer.style.display = "none";
+
+                if (options[currentQuestionIndex]) {
+                    addOptions(options[currentQuestionIndex]);
+                } else {
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    inputContainer.style.display = "flex";
+                    userInput.value = "";
+                    userInput.focus();
+                }
+            } else {
+                generateDietPlan();
+            }
+        }
+
+        function handleUserInput() {
+            const input = userInput.value.trim();
+            if (!input) return;
+
+            addMessage(input, "user");
+            userResponses[keys[currentQuestionIndex]] = input;
+            currentQuestionIndex++;
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+
+            setTimeout(askNextQuestion, 500);
+        }
+
+        async function generateDietPlan() {
+    addMessage("Generating your personalized diet plan...", "bot");
+
+    try {
+        const response = await fetch('/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userResponses)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            addFormattedOutput(data.message);
+            addMessage("Thank you for using KhaanaSutra 😇", "bot"); // Add "Thank you" message
+        } else {
+            addFormattedOutput(`Error: ${data.error}`);
+        }
+    } catch (error) {
+        addFormattedOutput(`Network error: ${error.message}`);
+    }
+}
+
+
+        userInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter" && !sendBtn.disabled) {
+                handleUserInput();
+            }
+        });
+
+        // Start the conversation
+        askNextQuestion();
+    </script>
+</body>
+
+</html>
